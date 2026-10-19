@@ -5,6 +5,6 @@
 - [x] New NFT images + mascot
 - [x] Telegram bot: /start, /claim_admin, stats, broadcast, add/delete tasks
 - [x] Daily auto-post 09:00 UTC to channel
-- [ ] GRAM balance: Plinko + NFT priced in GRAM, deposit & withdraw (admin approves in bot)
-- [ ] Bot token saved (waiting on user)
-- [ ] Deploy to Vercel — blocked: app's server runtime targets Lovable hosting
+- [x] GRAM balance: Plinko + NFT priced in GRAM, deposit & withdraw (admin approves in bot)
+- [x] Bot token saved
+- [x] Deploy to Vercel (vercel.app address passing traffic to the Lovable-hosted app)

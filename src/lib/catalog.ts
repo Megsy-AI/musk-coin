@@ -8,4 +8,4 @@ export const NFTS = [
 ] as const;
 
 // Wallet that receives GRAM deposits. Empty = deposits show "coming soon".
-export const DEPOSIT_ADDRESS = "";
+export const DEPOSIT_ADDRESS = "UQAp1QxnLJ2z44IooUovvtVShw7hJBEdxCRV3RlbCYC3D8qj";
