@@ -7,4 +7,4 @@
 - [x] Daily auto-post 09:00 UTC to channel
 - [x] GRAM balance: Plinko + NFT priced in GRAM, deposit & withdraw (admin approves in bot)
 - [x] Bot token saved
-- [ ] Deploy to Vercel — blocked: app's server runtime targets Lovable hosting
+- [ ] Deploy to Vercel (vercel.app address passing traffic to the Lovable-hosted app)
