@@ -7,7 +7,9 @@ export const Route = createFileRoute("/api/public/telegram/setup")({
     handlers: {
       GET: async ({ request }) => {
         const { tg, webhookSecret } = await import("@/lib/telegram.server");
-        const origin = new URL(request.url).origin;
+        const u = new URL(request.url);
+        const host = request.headers.get("x-forwarded-host") || u.host;
+        const origin = `https://${host}`;
         await tg("setWebhook", {
           url: `${origin}/api/public/telegram/webhook`,
           secret_token: await webhookSecret(),
