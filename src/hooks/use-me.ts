@@ -13,5 +13,7 @@ export function useMe() {
   });
   const setBalance = (balance: number) =>
     qc.setQueryData<Me | null>(["me"], (m) => (m ? { ...m, balance } : m));
-  return { ...q, me: q.data ?? null, setBalance, inTelegram: !!initData() };
+  const setGram = (gram: number) =>
+    qc.setQueryData<Me | null>(["me"], (m) => (m ? { ...m, gram } : m));
+  return { ...q, setGram, me: q.data ?? null, setBalance, inTelegram: !!initData() };
 }

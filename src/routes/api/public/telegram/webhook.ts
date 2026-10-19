@@ -65,6 +65,21 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             } else if (d.startsWith("del:")) {
               await db.from("tasks").delete().eq("id", d.slice(4));
               await T.tg("editMessageText", { chat_id: uid, message_id: cq.message.message_id, text: "Task deleted." }).catch(() => null);
+            } else if (d.startsWith("wr:")) {
+              const [, act, id] = d.split(":");
+              const { data: r } = await db.from("wallet_requests").select("*").eq("id", id).maybeSingle();
+              if (!r || r.status !== "pending") {
+                await send(uid, "Request already handled.");
+              } else {
+                const approve = act === "ok";
+                await db.from("wallet_requests").update({ status: approve ? "approved" : "rejected" }).eq("id", id);
+                if (r.kind === "deposit" && approve) await db.rpc("add_gram", { _tg_id: r.tg_id, _delta: Number(r.amount) });
+                if (r.kind === "withdraw" && !approve) await db.rpc("add_gram", { _tg_id: r.tg_id, _delta: Number(r.amount) });
+                const label = r.kind === "deposit" ? "Deposit" : "Withdrawal";
+                await send(r.tg_id, `${label} of <b>${r.amount} GRAM</b> was ${approve ? "approved" : "rejected"}.`).catch(() => null);
+                await T.tg("editMessageReplyMarkup", { chat_id: uid, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => null);
+                await send(uid, `${label} ${approve ? "approved" : "rejected"}.`);
+              }
             } else if (d === "a:post") {
               await send(uid, "Generating today's post…");
               const { runDailyPost } = await import("@/lib/daily-post.server");
