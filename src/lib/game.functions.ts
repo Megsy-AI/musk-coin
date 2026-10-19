@@ -26,6 +26,8 @@ export type Me = {
   username: string | null;
   photoUrl: string | null;
   balance: number;
+  gram: number;
+  nfts: string[];
   miningStartedAt: number | null;
   referrals: number;
 };
@@ -51,12 +53,15 @@ export const getMe = createServerFn({ method: "POST" })
       await db.from("players").update({ first_name: user.first_name, username: user.username ?? null, photo_url: user.photo_url ?? null }).eq("tg_id", user.id);
     }
     const { count } = await db.from("players").select("tg_id", { count: "exact", head: true }).eq("referred_by", user.id);
+    const { data: owned } = await db.from("user_nfts").select("nft_id").eq("tg_id", user.id);
     return {
       tgId: row.tg_id,
       firstName: row.first_name,
       username: row.username,
       photoUrl: row.photo_url,
       balance: Number(row.balance),
+      gram: Number(row.gram_balance),
+      nfts: (owned ?? []).map((n) => n.nft_id),
       miningStartedAt: row.mining_started_at ? new Date(row.mining_started_at).getTime() : null,
       referrals: count ?? 0,
     };
@@ -84,9 +89,9 @@ export const playPlinko = createServerFn({ method: "POST" })
   .inputValidator((d) => Auth.extend({ bet: z.number().min(PLINKO_MIN_BET).max(PLINKO_MAX_BET) }).parse(d))
   .handler(async ({ data }) => {
     const { db, user } = await ctx(data.initData);
-    const bet = Math.floor(data.bet);
+    const bet = Math.round(data.bet * 100) / 100;
     try {
-      await db.rpc("add_balance", { _tg_id: user.id, _delta: -bet }).throwOnError();
+      await db.rpc("add_gram", { _tg_id: user.id, _delta: -bet }).throwOnError();
     } catch {
       throw new Error("Not enough balance");
     }
@@ -95,7 +100,7 @@ export const playPlinko = createServerFn({ method: "POST" })
     const path = [...rnd].map((b) => b & 1);
     const slot = slotFromPath(path);
     const payout = payoutFor(bet, slot);
-    const { data: balance } = await db.rpc("add_balance", { _tg_id: user.id, _delta: payout });
+    const { data: balance } = await db.rpc("add_gram", { _tg_id: user.id, _delta: payout });
     return { path, slot, payout, balance: Number(balance) };
   });
 
@@ -128,4 +133,71 @@ export const completeTask = createServerFn({ method: "POST" })
     if (error) throw new Error("Already completed");
     const { data: balance } = await db.rpc("add_balance", { _tg_id: user.id, _delta: Number(task.reward) });
     return { balance: Number(balance), reward: Number(task.reward) };
+  });
+
+export const buyNft = createServerFn({ method: "POST" })
+  .inputValidator((d) => Auth.extend({ nftId: z.string().max(40) }).parse(d))
+  .handler(async ({ data }) => {
+    const { NFTS } = await import("./catalog");
+    const nft = NFTS.find((n) => n.id === data.nftId);
+    if (!nft) throw new Error("NFT not found");
+    const { db, user } = await ctx(data.initData);
+    const { data: own } = await db.from("user_nfts").select("nft_id").eq("tg_id", user.id).eq("nft_id", nft.id).maybeSingle();
+    if (own) throw new Error("You already own this NFT");
+    try {
+      await db.rpc("add_gram", { _tg_id: user.id, _delta: -nft.price }).throwOnError();
+    } catch {
+      throw new Error("Not enough GRAM");
+    }
+    await db.from("user_nfts").insert({ tg_id: user.id, nft_id: nft.id });
+    return { ok: true };
+  });
+
+async function notifyAdmins(db: any, text: string, id: string) {
+  const { tg } = await import("./telegram.server");
+  const { data: admins } = await db.from("bot_admins").select("tg_id");
+  for (const a of admins ?? []) {
+    await tg("sendMessage", {
+      chat_id: a.tg_id, text, parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "Approve", callback_data: `wr:ok:${id}` }, { text: "Reject", callback_data: `wr:no:${id}` }]] },
+    }).catch(() => null);
+  }
+}
+
+export const requestDeposit = createServerFn({ method: "POST" })
+  .inputValidator((d) => Auth.extend({ amount: z.number().min(0.1).max(100000), txRef: z.string().trim().min(4).max(200) }).parse(d))
+  .handler(async ({ data }) => {
+    const { db, user } = await ctx(data.initData);
+    const { data: r, error } = await db.from("wallet_requests").insert({ tg_id: user.id, kind: "deposit", amount: data.amount, tx_ref: data.txRef }).select("id").single();
+    if (error) throw new Error(error.message);
+    await notifyAdmins(db, `<b>Deposit request</b>\nUser: ${user.id}${user.username ? ` (@${user.username})` : ""}\nAmount: ${data.amount} GRAM\nTx: <code>${data.txRef.replace(/[<>&]/g, "")}</code>`, r.id);
+    return { ok: true };
+  });
+
+export const requestWithdraw = createServerFn({ method: "POST" })
+  .inputValidator((d) => Auth.extend({ amount: z.number().min(1).max(100000), address: z.string().trim().min(10).max(120) }).parse(d))
+  .handler(async ({ data }) => {
+    const { db, user } = await ctx(data.initData);
+    try {
+      await db.rpc("add_gram", { _tg_id: user.id, _delta: -data.amount }).throwOnError();
+    } catch {
+      throw new Error("Not enough GRAM");
+    }
+    const { data: r, error } = await db.from("wallet_requests").insert({ tg_id: user.id, kind: "withdraw", amount: data.amount, address: data.address }).select("id").single();
+    if (error) {
+      await db.rpc("add_gram", { _tg_id: user.id, _delta: data.amount });
+      throw new Error(error.message);
+    }
+    await notifyAdmins(db, `<b>Withdraw request</b>\nUser: ${user.id}${user.username ? ` (@${user.username})` : ""}\nAmount: ${data.amount} GRAM\nTo: <code>${data.address.replace(/[<>&]/g, "")}</code>`, r.id);
+    return { ok: true };
+  });
+
+export type WalletRequest = { id: string; kind: string; amount: number; status: string; createdAt: string };
+export const listWalletRequests = createServerFn({ method: "POST" })
+  .inputValidator((d) => Auth.parse(d))
+  .handler(async ({ data }): Promise<WalletRequest[]> => {
+    if (!data.initData) return [];
+    const { db, user } = await ctx(data.initData);
+    const { data: rows } = await db.from("wallet_requests").select("id,kind,amount,status,created_at").eq("tg_id", user.id).order("created_at", { ascending: false }).limit(20);
+    return (rows ?? []).map((r) => ({ id: r.id, kind: r.kind, amount: Number(r.amount), status: r.status, createdAt: r.created_at }));
   });

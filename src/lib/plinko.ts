@@ -1,8 +1,8 @@
 // Shared Plinko + mining rules (pure, browser-safe).
 export const PLINKO_ROWS = 12;
 export const PLINKO_MULTIPLIERS = [16, 4, 2, 1.4, 1.1, 0.6, 0.4, 0.6, 1.1, 1.4, 2, 4, 16];
-export const PLINKO_MIN_BET = 10;
-export const PLINKO_MAX_BET = 10000;
+export const PLINKO_MIN_BET = 0.1; // GRAM
+export const PLINKO_MAX_BET = 100; // GRAM
 
 /** path: array of 0 (left) / 1 (right) per row. Slot = number of rights. */
 export function slotFromPath(path: number[]) {
