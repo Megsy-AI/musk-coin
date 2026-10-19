@@ -14,13 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bot_admins: {
+        Row: {
+          created_at: string
+          tg_id: number
+        }
+        Insert: {
+          created_at?: string
+          tg_id: number
+        }
+        Update: {
+          created_at?: string
+          tg_id?: number
+        }
+        Relationships: []
+      }
+      bot_sessions: {
+        Row: {
+          draft: Json
+          step: string | null
+          tg_id: number
+          updated_at: string
+        }
+        Insert: {
+          draft?: Json
+          step?: string | null
+          tg_id: number
+          updated_at?: string
+        }
+        Update: {
+          draft?: Json
+          step?: string | null
+          tg_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_posts: {
+        Row: {
+          caption: string | null
+          created_at: string
+          error: string | null
+          image_url: string | null
+          post_date: string
+          status: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          error?: string | null
+          image_url?: string | null
+          post_date: string
+          status?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          error?: string | null
+          image_url?: string | null
+          post_date?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      players: {
+        Row: {
+          balance: number
+          created_at: string
+          first_name: string
+          is_blocked: boolean
+          mining_started_at: string | null
+          photo_url: string | null
+          referred_by: number | null
+          tg_id: number
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          first_name?: string
+          is_blocked?: boolean
+          mining_started_at?: string | null
+          photo_url?: string | null
+          referred_by?: number | null
+          tg_id: number
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          first_name?: string
+          is_blocked?: boolean
+          mining_started_at?: string | null
+          photo_url?: string | null
+          referred_by?: number | null
+          tg_id?: number
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      task_completions: {
+        Row: {
+          created_at: string
+          task_id: string
+          tg_id: number
+        }
+        Insert: {
+          created_at?: string
+          task_id: string
+          tg_id: number
+        }
+        Update: {
+          created_at?: string
+          task_id?: string
+          tg_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_completions_tg_id_fkey"
+            columns: ["tg_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["tg_id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          link: string
+          reward: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          link: string
+          reward?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          link?: string
+          reward?: number
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_balance: { Args: { _delta: number; _tg_id: number }; Returns: number }
     }
     Enums: {
       [_ in never]: never
