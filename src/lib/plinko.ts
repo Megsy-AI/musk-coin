@@ -17,7 +17,7 @@ export const MINING_DURATION_MS = 8 * 60 * 60 * 1000;
 export const MINING_REWARD = 1000; // coins per full session
 
 export function minedAmount(startedAt: number | null, now: number) {
-  if (!startedAt) return 0;
+  if (startedAt == null) return 0;
   const elapsed = Math.min(Math.max(now - startedAt, 0), MINING_DURATION_MS);
   return Math.floor((elapsed / MINING_DURATION_MS) * MINING_REWARD * 100) / 100;
 }
