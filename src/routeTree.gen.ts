@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicJobsDailyPostRouteImport } from './routes/api/public/jobs/daily-post'
 import { Route as ApiPublicTaskImageIdRouteImport } from './routes/api/public/task-image.$id'
 import { Route as ApiPublicTelegramSetupRouteImport } from './routes/api/public/telegram/setup'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
@@ -17,6 +18,11 @@ import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/publi
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicJobsDailyPostRoute = ApiPublicJobsDailyPostRouteImport.update({
+  id: '/api/public/jobs/daily-post',
+  path: '/api/public/jobs/daily-post',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicTaskImageIdRoute = ApiPublicTaskImageIdRouteImport.update({
@@ -38,12 +44,14 @@ const ApiPublicTelegramWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/jobs/daily-post': typeof ApiPublicJobsDailyPostRoute
   '/api/public/task-image/$id': typeof ApiPublicTaskImageIdRoute
   '/api/public/telegram/setup': typeof ApiPublicTelegramSetupRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/jobs/daily-post': typeof ApiPublicJobsDailyPostRoute
   '/api/public/task-image/$id': typeof ApiPublicTaskImageIdRoute
   '/api/public/telegram/setup': typeof ApiPublicTelegramSetupRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -51,6 +59,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/jobs/daily-post': typeof ApiPublicJobsDailyPostRoute
   '/api/public/task-image/$id': typeof ApiPublicTaskImageIdRoute
   '/api/public/telegram/setup': typeof ApiPublicTelegramSetupRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -59,18 +68,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/public/jobs/daily-post'
     | '/api/public/task-image/$id'
     | '/api/public/telegram/setup'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/public/jobs/daily-post'
     | '/api/public/task-image/$id'
     | '/api/public/telegram/setup'
     | '/api/public/telegram/webhook'
   id:
     | '__root__'
     | '/'
+    | '/api/public/jobs/daily-post'
     | '/api/public/task-image/$id'
     | '/api/public/telegram/setup'
     | '/api/public/telegram/webhook'
@@ -78,6 +90,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicJobsDailyPostRoute: typeof ApiPublicJobsDailyPostRoute
   ApiPublicTaskImageIdRoute: typeof ApiPublicTaskImageIdRoute
   ApiPublicTelegramSetupRoute: typeof ApiPublicTelegramSetupRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
@@ -90,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jobs/daily-post': {
+      id: '/api/public/jobs/daily-post'
+      path: '/api/public/jobs/daily-post'
+      fullPath: '/api/public/jobs/daily-post'
+      preLoaderRoute: typeof ApiPublicJobsDailyPostRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/task-image/$id': {
@@ -118,6 +138,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicJobsDailyPostRoute: ApiPublicJobsDailyPostRoute,
   ApiPublicTaskImageIdRoute: ApiPublicTaskImageIdRoute,
   ApiPublicTelegramSetupRoute: ApiPublicTelegramSetupRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
