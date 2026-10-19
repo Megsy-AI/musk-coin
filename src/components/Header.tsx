@@ -22,6 +22,16 @@ export function BalancePill() {
   );
 }
 
+export function GramPill() {
+  const { me } = useMe();
+  return (
+    <div className="glass inline-flex items-center gap-2 rounded-full px-4 py-2">
+      <span className="text-sm font-semibold tabular-nums">{fmt(me?.gram ?? 0)}</span>
+      <span className="text-xs text-muted-foreground">GRAM</span>
+    </div>
+  );
+}
+
 export function TelegramNotice() {
   const { inTelegram } = useMe();
   if (inTelegram) return null;

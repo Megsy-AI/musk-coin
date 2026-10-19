@@ -6,7 +6,7 @@ import { playPlinko } from "@/lib/game.functions";
 import { PLINKO_MULTIPLIERS, PLINKO_ROWS, PLINKO_MIN_BET } from "@/lib/plinko";
 import { useMe } from "@/hooks/use-me";
 import { fmt, haptic, initData } from "@/lib/tg-client";
-import { BalancePill, PageTitle, TelegramNotice } from "@/components/Header";
+import { GramPill, PageTitle, TelegramNotice } from "@/components/Header";
 
 export const Route = createFileRoute("/play")({
   head: () => ({
@@ -36,20 +36,20 @@ function slotTone(m: number) {
 }
 
 function PlinkoPage() {
-  const { me, setBalance, inTelegram } = useMe();
+  const { me, setGram, inTelegram } = useMe();
   const play = useServerFn(playPlinko);
-  const [bet, setBet] = useState(100);
+  const [bet, setBet] = useState(1);
   const [balls, setBalls] = useState<Ball[]>([]);
   const [hit, setHit] = useState<number | null>(null);
   const [last, setLast] = useState<{ m: number; win: number }[]>([]);
 
   const drop = async () => {
     if (!inTelegram) return toast("Open the app from Telegram");
-    if ((me?.balance ?? 0) < bet) return toast.error("Not enough balance");
+    if ((me?.gram ?? 0) < bet) return toast.error("Not enough balance");
     haptic("medium");
     try {
       const r = await play({ data: { initData: initData(), bet } });
-      setBalance((me?.balance ?? 0) - bet);
+      setGram((me?.gram ?? 0) - bet);
       const id = Date.now() + Math.random();
       let x = W / 2;
       setBalls((b) => [...b, { id, x, y: 4, done: false }]);
@@ -63,7 +63,7 @@ function PlinkoPage() {
       await new Promise((res) => setTimeout(res, 160));
       setBalls((b) => b.map((ball) => (ball.id === id ? { ...ball, y: H - 18, done: true } : ball)));
       setHit(r.slot);
-      setBalance(r.balance);
+      setGram(r.balance);
       setLast((l) => [{ m: PLINKO_MULTIPLIERS[r.slot], win: r.payout }, ...l].slice(0, 6));
       haptic(r.payout >= bet ? "success" : "light");
       setTimeout(() => {
@@ -80,7 +80,7 @@ function PlinkoPage() {
       <TelegramNotice />
       <div className="flex items-start justify-between">
         <PageTitle title="Plinko" subtitle="Drop. Bounce. Multiply." />
-        <BalancePill />
+        <GramPill />
       </div>
 
       <div className="glass animate-rise overflow-hidden rounded-3xl p-3">
@@ -108,19 +108,19 @@ function PlinkoPage() {
 
       <div className="glass animate-rise mt-4 rounded-3xl p-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Bet</span>
+          <span className="text-sm text-muted-foreground">Bet (GRAM)</span>
           <span className="text-lg font-semibold tabular-nums">{fmt(bet)}</span>
         </div>
         <div className="mt-3 grid grid-cols-4 gap-2">
-          {[PLINKO_MIN_BET, 100, 500, 1000].map((v) => (
+          {[PLINKO_MIN_BET, 1, 5, 10].map((v) => (
             <button key={v} onClick={() => setBet(v)} className={`press rounded-xl py-2 text-sm font-semibold ${bet === v ? "bg-foreground text-background" : "bg-secondary"}`}>
               {fmt(v)}
             </button>
           ))}
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <button onClick={() => setBet((b) => Math.max(PLINKO_MIN_BET, Math.floor(b / 2)))} className="press rounded-xl bg-secondary py-2 text-sm font-semibold">½</button>
-          <button onClick={() => setBet((b) => Math.min(10000, b * 2))} className="press rounded-xl bg-secondary py-2 text-sm font-semibold">2×</button>
+          <button onClick={() => setBet((b) => Math.max(PLINKO_MIN_BET, Math.round((b / 2) * 100) / 100))} className="press rounded-xl bg-secondary py-2 text-sm font-semibold">½</button>
+          <button onClick={() => setBet((b) => Math.min(100, b * 2))} className="press rounded-xl bg-secondary py-2 text-sm font-semibold">2×</button>
         </div>
         <button onClick={drop} className="press mt-4 w-full rounded-2xl bg-gold py-4 text-[17px] font-semibold text-primary-foreground">
           Drop ball

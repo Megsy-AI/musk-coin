@@ -8,6 +8,13 @@
       "when": 1792426415917,
       "tag": "0000_musk_coin_core",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792427057504,
+      "tag": "0001_gram_wallet",
+      "breakpoints": true
     }
   ]
 }

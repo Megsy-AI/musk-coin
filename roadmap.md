@@ -1,8 +1,10 @@
 # Musk Coin roadmap
-- [ ] New Cloud database (old one untouched)
-- [ ] iOS-style design system + animated background
-- [ ] Pages: Mine, Plinko, Tasks, NFT, Wallet (new design)
-- [ ] New NFT images + character mascot (ghost-inspired, different colors)
-- [ ] Telegram bot: /start, claim admin, stats, broadcast, add/delete tasks (name → photo → link)
-- [ ] Daily auto-post to channel -1003736245644 with generated mascot image + one bold line
-- [ ] Deploy to Vercel (user requested) — needs user to store token securely
+- [x] New Cloud database (old one untouched)
+- [x] iOS-style design system + animated background
+- [x] Pages: Mine, Plinko, Tasks, NFT, Wallet
+- [x] New NFT images + mascot
+- [x] Telegram bot: /start, /claim_admin, stats, broadcast, add/delete tasks
+- [x] Daily auto-post 09:00 UTC to channel
+- [ ] GRAM balance: Plinko + NFT priced in GRAM, deposit & withdraw (admin approves in bot)
+- [ ] Bot token saved (waiting on user)
+- [ ] Deploy to Vercel — blocked: app's server runtime targets Lovable hosting
