@@ -29,7 +29,9 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         }
         const update = (await request.json()) as any;
         const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
-        const origin = new URL(request.url).origin;
+        const u = new URL(request.url);
+        const host = request.headers.get("x-forwarded-host") || u.host;
+        const origin = `https://${host}`;
         const send = (chat_id: number, text: string, extra: Record<string, unknown> = {}) =>
           T.tg("sendMessage", { chat_id, text, parse_mode: "HTML", ...extra });
 
