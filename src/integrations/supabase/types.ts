@@ -82,6 +82,7 @@ export type Database = {
           balance: number
           created_at: string
           first_name: string
+          gram_balance: number
           is_blocked: boolean
           mining_started_at: string | null
           photo_url: string | null
@@ -94,6 +95,7 @@ export type Database = {
           balance?: number
           created_at?: string
           first_name?: string
+          gram_balance?: number
           is_blocked?: boolean
           mining_started_at?: string | null
           photo_url?: string | null
@@ -106,6 +108,7 @@ export type Database = {
           balance?: number
           created_at?: string
           first_name?: string
+          gram_balance?: number
           is_blocked?: boolean
           mining_started_at?: string | null
           photo_url?: string | null
@@ -176,12 +179,80 @@ export type Database = {
         }
         Relationships: []
       }
+      user_nfts: {
+        Row: {
+          created_at: string
+          nft_id: string
+          tg_id: number
+        }
+        Insert: {
+          created_at?: string
+          nft_id: string
+          tg_id: number
+        }
+        Update: {
+          created_at?: string
+          nft_id?: string
+          tg_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_nfts_tg_id_fkey"
+            columns: ["tg_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["tg_id"]
+          },
+        ]
+      }
+      wallet_requests: {
+        Row: {
+          address: string | null
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          status: string
+          tg_id: number
+          tx_ref: string | null
+        }
+        Insert: {
+          address?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          kind: string
+          status?: string
+          tg_id: number
+          tx_ref?: string | null
+        }
+        Update: {
+          address?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          status?: string
+          tg_id?: number
+          tx_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_requests_tg_id_fkey"
+            columns: ["tg_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["tg_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       add_balance: { Args: { _delta: number; _tg_id: number }; Returns: number }
+      add_gram: { Args: { _delta: number; _tg_id: number }; Returns: number }
     }
     Enums: {
       [_ in never]: never
