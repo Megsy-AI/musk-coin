@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "https://musk-coin.lovable.app/$1"
+    }
+  ]
+}
