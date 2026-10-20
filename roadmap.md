@@ -8,4 +8,5 @@
 - [x] GRAM balance: Plinko + NFT priced in GRAM, deposit & withdraw (admin approves in bot)
 - [x] Bot token saved
 - [x] Keep the existing Lovable Cloud database and current app data in place
-- [ ] Deploy the complete app directly on Vercel and repair its homepage (blocked: this workspace has no Vercel project access; the exposed Vercel token must be rotated before use)
+- [x] Prepare Vercel to proxy all pages and server requests to the canonical app, preserving the existing Lovable Cloud database
+- [ ] Apply the Vercel configuration to the live project (blocked: this workspace has no Vercel deployment access; the previously shared Vercel token must be rotated before use)

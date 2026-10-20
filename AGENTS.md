@@ -14,3 +14,4 @@
 - All tables are service-role only (RLS on, no policies); every read/write goes through server functions or /api/public routes. Why: there is no browser session to scope RLS to.
 - The Telegram bot runs at /api/public/telegram/webhook; GET /api/public/telegram/setup re-points the webhook and menu button to the host serving it. Why: lets the bot follow whichever domain is live.
 - Task photos are stored as Telegram file_ids and served via /api/public/task-image/$id. Why: workspace blocks public storage buckets.
+- Vercel is a fixed-origin reverse proxy to the canonical Lovable app, not an independent application deployment, so the same Cloud database and server functions remain authoritative without copying secrets or data.
