@@ -153,13 +153,13 @@ export const buyNft = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function notifyAdmins(db: any, text: string, id: string) {
+async function notifyAdmins(db: any, text: string, id: string | null) {
   const { tg } = await import("./telegram.server");
   const { data: admins } = await db.from("bot_admins").select("tg_id");
   for (const a of admins ?? []) {
     await tg("sendMessage", {
       chat_id: a.tg_id, text, parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "Approve", callback_data: `wr:ok:${id}` }, { text: "Reject", callback_data: `wr:no:${id}` }]] },
+      ...(id ? { reply_markup: { inline_keyboard: [[{ text: "Approve", callback_data: `wr:ok:${id}` }, { text: "Reject", callback_data: `wr:no:${id}` }]] } } : {}),
     }).catch(() => null);
   }
 }
