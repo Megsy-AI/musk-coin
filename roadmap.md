@@ -9,4 +9,4 @@
 - [x] Bot token saved
 - [x] Keep the existing Lovable Cloud database and current app data in place
 - [x] Prepare Vercel to proxy all pages and server requests to the canonical app, preserving the existing Lovable Cloud database
-- [ ] Apply Vercel configuration and update relevant app links using the token the user authorized for one-time use; user will revoke it immediately afterward
+- [ ] Apply Vercel configuration and update relevant app links (blocked: the shared token is exposed in chat and must be revoked; this workspace has no Vercel connection)
