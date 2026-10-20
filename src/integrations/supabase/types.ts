@@ -212,6 +212,7 @@ export type Database = {
           created_at: string
           id: string
           kind: string
+          memo: string | null
           status: string
           tg_id: number
           tx_ref: string | null
@@ -222,6 +223,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind: string
+          memo?: string | null
           status?: string
           tg_id: number
           tx_ref?: string | null
@@ -232,6 +234,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          memo?: string | null
           status?: string
           tg_id?: number
           tx_ref?: string | null

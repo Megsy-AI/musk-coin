@@ -15,6 +15,13 @@
       "when": 1792427057504,
       "tag": "0001_gram_wallet",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792510143543,
+      "tag": "0002_deposit_memo",
+      "breakpoints": true
     }
   ]
 }
