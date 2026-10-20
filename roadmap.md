@@ -7,4 +7,5 @@
 - [x] Daily auto-post 09:00 UTC to channel
 - [x] GRAM balance: Plinko + NFT priced in GRAM, deposit & withdraw (admin approves in bot)
 - [x] Bot token saved
-- [x] Deploy to Vercel (vercel.app address passing traffic to the Lovable-hosted app)
+- [x] Keep the existing Lovable Cloud database and current app data in place
+- [ ] Deploy the complete app directly on Vercel and repair its homepage (blocked: this workspace has no Vercel project access; the exposed Vercel token must be rotated before use)
