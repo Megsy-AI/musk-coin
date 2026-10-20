@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ArrowDownLeft, ArrowUpRight, Copy, Users } from "lucide-react";
 import mascot from "@/assets/mascot.png";
 import { useMe } from "@/hooks/use-me";
-import { listWalletRequests, requestDeposit, requestWithdraw } from "@/lib/game.functions";
+import { checkDeposit, listWalletRequests, requestWithdraw, startDeposit } from "@/lib/game.functions";
 import { DEPOSIT_ADDRESS } from "@/lib/catalog";
 import { fmt, haptic, initData } from "@/lib/tg-client";
 import { PageTitle, TelegramNotice } from "@/components/Header";
@@ -30,7 +30,8 @@ const BOT = "MuskCoinBot";
 function WalletPage() {
   const { me, refetch, inTelegram } = useMe();
   const qc = useQueryClient();
-  const deposit = useServerFn(requestDeposit);
+  const deposit = useServerFn(startDeposit);
+  const check = useServerFn(checkDeposit);
   const withdraw = useServerFn(requestWithdraw);
   const listReq = useServerFn(listWalletRequests);
   const { data: history } = useQuery({ queryKey: ["wallet-req"], queryFn: () => listReq({ data: { initData: initData() } }) });
@@ -46,17 +47,52 @@ function WalletPage() {
     toast.success(msg);
   };
 
+  const connectWallet = async () => {
+    const tc = await (await import("@/lib/ton")).getTonConnect();
+    if (!tc.connected) await tc.openModal();
+    return tc;
+  };
+
+  const waitConnected = async (tc: any) => {
+    for (let i = 0; i < 120 && !tc.connected; i++) await new Promise((r) => setTimeout(r, 500));
+    if (!tc.connected) throw new Error("Wallet not connected");
+  };
+
+  const fillMyAddress = async () => {
+    const tc = await connectWallet();
+    await waitConnected(tc);
+    const { toUserFriendlyAddress } = await import("@tonconnect/ui");
+    setField(toUserFriendlyAddress(tc.account.address));
+  };
+
   const submit = async () => {
     if (!inTelegram) return toast("Open the app from Telegram");
     const a = Number(amount);
     if (!a || a <= 0) return toast.error("Enter an amount");
     setBusy(true);
     try {
-      if (sheet === "deposit") await deposit({ data: { initData: initData(), amount: a, txRef: field } });
-      else await withdraw({ data: { initData: initData(), amount: a, address: field } });
-      haptic("success");
-      toast.success("Request sent. You'll get a message once it's reviewed.");
-      setSheet(null);
+      if (sheet === "deposit") {
+        const tc = await connectWallet();
+        await waitConnected(tc);
+        const d = await deposit({ data: { initData: initData(), amount: a } });
+        const { commentPayload } = await import("@/lib/ton");
+        await tc.sendTransaction({ validUntil: Math.floor(Date.now() / 1000) + 600, messages: [{ address: d.address, amount: d.nano, payload: commentPayload(d.memo) }] });
+        toast("Confirming on the blockchain…");
+        setSheet(null);
+        let ok = false;
+        for (let i = 0; i < 24 && !ok; i++) {
+          await new Promise((r) => setTimeout(r, 5000));
+          const r = await check({ data: { initData: initData(), id: d.id } }).catch(() => null);
+          ok = r?.status === "approved";
+        }
+        if (ok) { haptic("success"); toast.success(`+${fmt(a)} GRAM added`); }
+        else toast("Still confirming. Your balance updates automatically.");
+      } else {
+        await withdraw({ data: { initData: initData(), amount: a, address: field } });
+        haptic("success");
+        toast.success("Withdrawal requested. You'll get a message once it's sent.");
+        setSheet(null);
+      }
       setAmount("");
       setField("");
       await refetch();
@@ -149,19 +185,21 @@ function WalletPage() {
             <h2 className="text-2xl font-bold">{sheet === "deposit" ? "Deposit GRAM" : "Withdraw GRAM"}</h2>
             {sheet === "deposit" && (
               DEPOSIT_ADDRESS ? (
-                <button onClick={() => copy(DEPOSIT_ADDRESS, "Address copied")} className="press mt-4 w-full rounded-2xl bg-secondary p-3 text-left">
-                  <p className="text-[12px] text-muted-foreground">Send GRAM to this address, then paste the transaction link below</p>
-                  <p className="mt-1 break-all font-mono text-[13px]">{DEPOSIT_ADDRESS}</p>
-                </button>
+                <p className="mt-2 text-[14px] text-muted-foreground">Pay with your TON wallet. 1 TON = 1 GRAM, credited automatically.</p>
               ) : (
                 <p className="mt-3 text-[14px] text-muted-foreground">Deposits open soon.</p>
               )
             )}
             {sheet === "withdraw" && <p className="mt-2 text-[14px] text-muted-foreground">Available: {fmt(me?.gram ?? 0)} GRAM · minimum 1</p>}
             <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="Amount" className="mt-4 w-full rounded-2xl bg-secondary px-4 py-3.5 text-[17px] outline-none placeholder:text-muted-foreground" />
-            <input value={field} onChange={(e) => setField(e.target.value)} placeholder={sheet === "deposit" ? "Transaction link or hash" : "Your wallet address"} className="mt-2 w-full rounded-2xl bg-secondary px-4 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground" />
+            {sheet === "withdraw" && (
+              <>
+                <input value={field} onChange={(e) => setField(e.target.value)} placeholder="Your wallet address" className="mt-2 w-full rounded-2xl bg-secondary px-4 py-3.5 text-[15px] outline-none placeholder:text-muted-foreground" />
+                <button onClick={() => fillMyAddress().catch((e) => toast.error(e?.message ?? "Failed"))} className="press mt-2 w-full rounded-2xl bg-secondary py-3 text-[15px] font-semibold">Use my TON wallet</button>
+              </>
+            )}
             <button onClick={submit} disabled={busy || (sheet === "deposit" && !DEPOSIT_ADDRESS)} className="press mt-4 w-full rounded-2xl bg-gold py-4 text-[17px] font-semibold text-primary-foreground disabled:opacity-50">
-              {busy ? "…" : sheet === "deposit" ? "I've sent it" : "Request withdrawal"}
+              {busy ? "…" : sheet === "deposit" ? "Pay with TON wallet" : "Request withdrawal"}
             </button>
           </div>
         </div>
