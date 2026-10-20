@@ -153,25 +153,50 @@ export const buyNft = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function notifyAdmins(db: any, text: string, id: string) {
+async function notifyAdmins(db: any, text: string, id: string | null) {
   const { tg } = await import("./telegram.server");
   const { data: admins } = await db.from("bot_admins").select("tg_id");
   for (const a of admins ?? []) {
     await tg("sendMessage", {
       chat_id: a.tg_id, text, parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "Approve", callback_data: `wr:ok:${id}` }, { text: "Reject", callback_data: `wr:no:${id}` }]] },
+      ...(id ? { reply_markup: { inline_keyboard: [[{ text: "Approve", callback_data: `wr:ok:${id}` }, { text: "Reject", callback_data: `wr:no:${id}` }]] } } : {}),
     }).catch(() => null);
   }
 }
 
-export const requestDeposit = createServerFn({ method: "POST" })
-  .inputValidator((d) => Auth.extend({ amount: z.number().min(0.1).max(100000), txRef: z.string().trim().min(4).max(200) }).parse(d))
+// Step 1: create a pending deposit with a unique memo the wallet attaches as a comment.
+export const startDeposit = createServerFn({ method: "POST" })
+  .inputValidator((d) => Auth.extend({ amount: z.number().min(0.1).max(100000) }).parse(d))
   .handler(async ({ data }) => {
     const { db, user } = await ctx(data.initData);
-    const { data: r, error } = await db.from("wallet_requests").insert({ tg_id: user.id, kind: "deposit", amount: data.amount, tx_ref: data.txRef }).select("id").single();
+    const { DEPOSIT_ADDRESS } = await import("./catalog");
+    const bytes = crypto.getRandomValues(new Uint8Array(5));
+    const memo = "MUSK" + Array.from(bytes, (b) => b.toString(36).padStart(2, "0")).join("").toUpperCase().slice(0, 8);
+    const { data: r, error } = await db.from("wallet_requests").insert({ tg_id: user.id, kind: "deposit", amount: data.amount, memo }).select("id").single();
     if (error) throw new Error(error.message);
-    await notifyAdmins(db, `<b>Deposit request</b>\nUser: ${user.id}${user.username ? ` (@${user.username})` : ""}\nAmount: ${data.amount} GRAM\nTx: <code>${data.txRef.replace(/[<>&]/g, "")}</code>`, r.id);
-    return { ok: true };
+    return { id: r.id, memo, address: DEPOSIT_ADDRESS, nano: String(Math.round(data.amount * 1e9)) };
+  });
+
+// Step 2: look on-chain for an incoming transfer with that memo and credit automatically.
+export const checkDeposit = createServerFn({ method: "POST" })
+  .inputValidator((d) => Auth.extend({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const { db, user } = await ctx(data.initData);
+    const { DEPOSIT_ADDRESS } = await import("./catalog");
+    const { data: r } = await db.from("wallet_requests").select("*").eq("id", data.id).eq("tg_id", user.id).maybeSingle();
+    if (!r || r.kind !== "deposit") throw new Error("Not found");
+    if (r.status !== "pending") return { status: r.status };
+    const res = await fetch(`https://toncenter.com/api/v2/getTransactions?address=${DEPOSIT_ADDRESS}&limit=50`);
+    const j: any = await res.json().catch(() => null);
+    const txs: any[] = j?.result ?? [];
+    const hit = txs.find((t) => (t.in_msg?.message ?? "").trim() === r.memo && Number(t.in_msg?.value ?? 0) >= Math.round(Number(r.amount) * 1e9) - 1);
+    if (!hit) return { status: "pending" };
+    const { data: upd } = await db.from("wallet_requests").update({ status: "approved", tx_ref: hit.transaction_id?.hash ?? null }).eq("id", r.id).eq("status", "pending").select("id");
+    if (upd?.length) {
+      await db.rpc("add_gram", { _tg_id: user.id, _delta: Number(r.amount) });
+      await notifyAdmins(db, `<b>Deposit received</b>\nUser: ${user.id}\nAmount: ${r.amount} GRAM`, null).catch(() => null);
+    }
+    return { status: "approved" };
   });
 
 export const requestWithdraw = createServerFn({ method: "POST" })
